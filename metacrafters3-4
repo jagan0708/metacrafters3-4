@@ -1,0 +1,53 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract DegenToken is ERC20, Ownable 
+{
+    constructor() ERC20("Degen", "DGN") Ownable(msg.sender) 
+    {}
+
+    event TokensMinted(address indexed account, uint256 amount);
+    event TokensRedeemed(address indexed account, uint256 amount);
+    event TokensBurned(address indexed account, uint256 amount);
+    event TokensTransferred(address indexed from, address indexed to, uint256 amount);
+    
+    function mintTokens(address to, uint256 amount) public onlyOwner {
+        require(to != address(0), "Cannot mint to the zero address");
+        require(amount > 0, "Amount must be greater than zero");
+        
+        _mint(to, amount);
+        emit TokensMinted(to, amount);
+    }
+
+
+    function redeemTokens(uint256 amount) public {
+        require(amount > 0, "Amount must be greater than zero");
+        require(balanceOf(msg.sender) >= amount, "Insufficient balance to redeem");
+        
+        _burn(msg.sender, amount);
+        emit TokensRedeemed(msg.sender, amount);
+    }
+
+    function burnTokens(uint256 amount) public {
+        require(amount > 0, "Amount must be greater than zero");
+        require(balanceOf(msg.sender) >= amount, "Insufficient balance to burn");
+        
+        _burn(msg.sender, amount);
+        emit TokensBurned(msg.sender, amount);
+    }
+
+    function transferTokens(address to, uint256 amount) public {
+        require(to != address(0), "Cannot transfer to the zero address");
+        require(amount > 0, "Amount must be greater than zero");
+        
+        _transfer(msg.sender, to, amount);
+        emit TokensTransferred(msg.sender, to, amount);
+    }
+
+    function getTokenBalance(address account) public view returns (uint256) {
+        return balanceOf(account);
+    }
+}
