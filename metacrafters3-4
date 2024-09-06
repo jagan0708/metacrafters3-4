@@ -1,53 +1,68 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+
+pragma solidity 0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract DegenToken is ERC20, Ownable 
 {
-    constructor() ERC20("Degen", "DGN") Ownable(msg.sender) 
-    {}
+    using Strings for uint256;
 
-    event TokensMinted(address indexed account, uint256 amount);
-    event TokensRedeemed(address indexed account, uint256 amount);
-    event TokensBurned(address indexed account, uint256 amount);
-    event TokensTransferred(address indexed from, address indexed to, uint256 amount);
-    
-    function mintTokens(address to, uint256 amount) public onlyOwner {
-        require(to != address(0), "Cannot mint to the zero address");
-        require(amount > 0, "Amount must be greater than zero");
-        
+    struct Item 
+    {
+        string name_of_brands;
+        uint256 cost_of_brands;
+    }
+
+    mapping(uint256 => Item) public items;
+    mapping(address => string[]) public playerItems;
+
+    constructor(address initialOwner) ERC20("Degen", "DGN") Ownable(initialOwner)
+    {
+        items[1] = Item("Ram Charan Ticket NFT", 1000);
+        items[2] = Item("Ram Charan Autograph NFT", 500);
+        items[3] = Item("Ram Charan Global Star NFT", 200);
+        items[4] = Item("Ram Charan Stamp NFT", 100);
+    }
+
+    function mint(address to, uint256 amount) public onlyOwner 
+    {
         _mint(to, amount);
-        emit TokensMinted(to, amount);
     }
 
-
-    function redeemTokens(uint256 amount) public {
-        require(amount > 0, "Amount must be greater than zero");
-        require(balanceOf(msg.sender) >= amount, "Insufficient balance to redeem");
-        
+    function burn(uint256 amount) public 
+    {
+        require(balanceOf(msg.sender) >= amount, "Insufficient balance");
         _burn(msg.sender, amount);
-        emit TokensRedeemed(msg.sender, amount);
     }
-
-    function burnTokens(uint256 amount) public {
-        require(amount > 0, "Amount must be greater than zero");
-        require(balanceOf(msg.sender) >= amount, "Insufficient balance to burn");
+    
+    function transferToken(address receiver, uint256 amount) external 
+    {
+        require(balanceOf(msg.sender) >= amount, "Sorry, not enough Degen tokens available");
+        transfer(receiver, amount);
+    }
         
-        _burn(msg.sender, amount);
-        emit TokensBurned(msg.sender, amount);
-    }
+    function redeem(uint256 item) external 
+    {
+        Item storage selectedItem = items[item];
+        require(bytes(selectedItem.name_of_brands).length > 0, "Invalid redeem item");
+        require(balanceOf(msg.sender) >= selectedItem.cost_of_brands, "Insufficient balance to redeem");
 
-    function transferTokens(address to, uint256 amount) public {
-        require(to != address(0), "Cannot transfer to the zero address");
-        require(amount > 0, "Amount must be greater than zero");
+        _burn(msg.sender, selectedItem.cost_of_brands);
         
-        _transfer(msg.sender, to, amount);
-        emit TokensTransferred(msg.sender, to, amount);
+        playerItems[msg.sender].push(selectedItem.name_of_brands);
+        delete items[item];
     }
 
-    function getTokenBalance(address account) public view returns (uint256) {
-        return balanceOf(account);
+    function showStore() external pure returns (string memory) 
+    {
+        return "1. Ram Charan Movie Ticket NFT (1000 tokens) 2. Ram Charan Autograph NFT (500 tokens) 3. Ram Charan Global Star NFT (200 tokens) 4.  Ram Charan Stamp NFT (100 tokens)";
+    }
+
+    function getPlayerItems(address player) external view returns (string[] memory) 
+    {
+        return playerItems[player];
     }
 }
